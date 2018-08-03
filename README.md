@@ -11,4 +11,5 @@ In progress:
 * Allow Raspberry Pi to be mounted via NTP to retrieve data
 
 Modified from GPSd4Java.
+
 Author: Travis Marlatte (TravGoneFlying)
