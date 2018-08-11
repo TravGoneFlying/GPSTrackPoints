@@ -86,16 +86,13 @@ public class GPSTrackPointsRun {
 			ep = new GPSdEndpoint(host, port, rp);
 
 			String GPXFilename = "Shared/newTrackPoints.gpx";
-<<<<<<< HEAD
-=======
-			
+
 			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
 			
 			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 			GPXHeaderFooter.write("<gpx version=\"1.0\" creator=\"com.traviscons.GPSTrackPoints\">\n");
 			GPXHeaderFooter.write("<name>GPSTRackPoints date</name>\n");
 			GPXHeaderFooter.close();
->>>>>>> 4882a1671546f1c33986dde443c6d8a1fdd8db5f
 			
 			ep.addListener(new ObjectListener(GPXFilename) {
 
