@@ -55,13 +55,19 @@ public class GPSTrackPointsTest {
 			System.err.println("INFO: GPSTRackPointsTest:MainTest");
 			final GPSdEndpoint ep = new GPSdEndpoint(host, port, new ResultParser());
 
-			BufferedWriter inGPXOuput = new BufferedWriter(new FileWriter("Shared/testGPXOutput.gpx"));
+			String inGPXFilename = "Shared/testGPXOutput.gpx";
 			
-			ep.addListener(new ObjectListener(null) {
+			ep.addListener(new ObjectListener(inGPXFilename) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
-					System.err.println("INFO: Tester - TPV: " + tpv);
+					try {
+						BufferedWriter GPXOut = new BufferedWriter(new FileWriter(GPXFilename));
+						GPXOut.write("INFO: Tester - TPV: " + tpv);
+						GPXOut.close();
+					} catch (IOException e) {
+						System.err.println("Caught Exception writing to the GPX file " + e.toString());
+					}
 				}
 
 				@Override
@@ -104,7 +110,7 @@ public class GPSTrackPointsTest {
 
 //			System.err.println("INFO: Tester - Poll: " + ep.poll());
 
-			Thread.sleep(5000);
+			Thread.sleep(60000);
 			
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);
