@@ -86,7 +86,7 @@ public class GPSTrackPointsRun {
 			ResultParser rp = new ResultParser();
 			ep = new GPSdEndpoint(host, port, rp);
 
-			String GPXFilename = "Share/newTrackPoints.gpx";
+			String GPXFilename = "Shared/newTrackPoints.gpx";
 			
 			ep.addListener(new ObjectListener(GPXFilename) {
 
