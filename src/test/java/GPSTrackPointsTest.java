@@ -23,6 +23,10 @@ package com.traviscons.GPSTrackPoints.tests;
 import org.junit.*;
 import static org.junit.Assert.*;
 
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.IOException;
+
 import com.traviscons.GPSTrackPoints.api.ObjectListener;
 import com.traviscons.GPSTrackPoints.backend.GPSdEndpoint;
 import com.traviscons.GPSTrackPoints.backend.ResultParser;
@@ -51,7 +55,9 @@ public class GPSTrackPointsTest {
 			System.err.println("INFO: GPSTRackPointsTest:MainTest");
 			final GPSdEndpoint ep = new GPSdEndpoint(host, port, new ResultParser());
 
-			ep.addListener(new ObjectListener() {
+			BufferedWriter inGPXOuput = new BufferedWriter(new FileWriter("Shared/testGPXOutput.gpx"));
+			
+			ep.addListener(new ObjectListener(null) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
@@ -99,6 +105,7 @@ public class GPSTrackPointsTest {
 //			System.err.println("INFO: Tester - Poll: " + ep.poll());
 
 			Thread.sleep(5000);
+			
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);
 		}

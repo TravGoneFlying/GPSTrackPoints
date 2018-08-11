@@ -20,6 +20,9 @@ package com.traviscons.GPSTrackPoints.api;
  * #L%
  */
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+
 import com.traviscons.GPSTrackPoints.types.ATTObject;
 import com.traviscons.GPSTrackPoints.types.DeviceObject;
 import com.traviscons.GPSTrackPoints.types.DevicesObject;
@@ -33,6 +36,11 @@ import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
  * @author thoeger
  */
 public class ObjectListener implements IObjectListener {
+	public String GPXFilename;
+	
+	public ObjectListener(String inGPXFilename) {
+		GPXFilename = inGPXFilename;
+	}
 	
 	@Override
 	public void handleTPV(final TPVObject tpv) {

@@ -33,7 +33,6 @@ import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
  * @author thoeger
  */
 public interface IObjectListener {
-	
 	/**
 	 * @param tpv the TPV object
 	 */

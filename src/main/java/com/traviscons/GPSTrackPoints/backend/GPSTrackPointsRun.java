@@ -25,6 +25,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.IOException;
+
 import com.traviscons.GPSTrackPoints.api.ObjectListener;
 import com.traviscons.GPSTrackPoints.backend.GPSdEndpoint;
 import com.traviscons.GPSTrackPoints.backend.ResultParser;
@@ -43,8 +47,7 @@ import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
  */
 public class GPSTrackPointsRun {
 	protected final DateFormat dateFormat; // Don't make this static!
-
-
+	
 	private GPSTrackPointsRun() {
 		dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -83,12 +86,22 @@ public class GPSTrackPointsRun {
 			ResultParser rp = new ResultParser();
 			ep = new GPSdEndpoint(host, port, rp);
 
-			ep.addListener(new ObjectListener() {
+			String GPXFilename = "Share/newTrackPoints.gpx";
+			
+			ep.addListener(new ObjectListener(GPXFilename) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
+					BufferedWriter GPXOutput = null;
+					
 					if (tpv.getAltitude() != Double.NaN) {
-						System.err.println("TPV : " + tpv.getTimestampText() + " " + tpv.getLatitude() + " " + tpv.getLongitude() + " " + tpv.getAltitude());
+						try {
+							GPXOutput = new BufferedWriter(new FileWriter(GPXFilename));
+							GPXOutput.write("TPV : " + tpv.getTimestampText() + " " + tpv.getLatitude() + " " + tpv.getLongitude() + " " + tpv.getAltitude());
+							GPXOutput.close();
+						} catch (IOException e) {
+							System.err.println("Caught Exception writing to the GPX output " + e.toString());
+						}
 					}
 				}
 
@@ -134,6 +147,7 @@ public class GPSTrackPointsRun {
 
 			/* Infinite loop while the listeners do the work */
 			while (true) {Thread.sleep(60000);}
+	
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);
 		}
