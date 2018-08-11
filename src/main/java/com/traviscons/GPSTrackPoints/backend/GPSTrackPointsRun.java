@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.TimeZone;
 
 import java.io.FileWriter;
-import java.io.BufferedWriter;
 import java.io.IOException;
 
 import com.traviscons.GPSTrackPoints.api.ObjectListener;
@@ -86,18 +85,25 @@ public class GPSTrackPointsRun {
 			ResultParser rp = new ResultParser();
 			ep = new GPSdEndpoint(host, port, rp);
 
-			String GPXFilename = "Share/newTrackPoints.gpx";
+			String GPXFilename = "Shared/newTrackPoints.gpx";
+			
+			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
+			
+			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+			GPXHeaderFooter.write("<gpx version=\"1.0\" creator=\"com.traviscons.GPSTrackPoints\">\n");
+			GPXHeaderFooter.write("<name>GPSTRackPoints date</name>\n");
+			GPXHeaderFooter.close();
 			
 			ep.addListener(new ObjectListener(GPXFilename) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
-					BufferedWriter GPXOutput = null;
+					FileWriter GPXOutput = null;
 					
 					if (tpv.getAltitude() != Double.NaN) {
 						try {
-							GPXOutput = new BufferedWriter(new FileWriter(GPXFilename));
-							GPXOutput.write("TPV : " + tpv.getTimestampText() + " " + tpv.getLatitude() + " " + tpv.getLongitude() + " " + tpv.getAltitude());
+							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
+							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time></wpt>\n");
 							GPXOutput.close();
 						} catch (IOException e) {
 							System.err.println("Caught Exception writing to the GPX output " + e.toString());
@@ -146,7 +152,14 @@ public class GPSTrackPointsRun {
 //			System.err.println("INFO: Tester - Poll: " + ep.poll());
 
 			/* Infinite loop while the listeners do the work */
-			while (true) {Thread.sleep(60000);}
+			Thread.sleep(60000);
+
+			ep.stop();
+		
+			GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
+			GPXHeaderFooter.write("</gpx>\n");
+			GPXHeaderFooter.close();
+
 	
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);

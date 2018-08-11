@@ -20,7 +20,7 @@ package com.traviscons.GPSTrackPoints.api;
  * #L%
  */
 
-import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import com.traviscons.GPSTrackPoints.types.ATTObject;
