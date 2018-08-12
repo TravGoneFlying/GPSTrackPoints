@@ -41,21 +41,38 @@ import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
 
 /**
  * Initialize and execute a listener for GPSd.
- * lat, long and altitude are displayed to the console.
  *
+ * Use DateFormat to establish the desired presentation of the GPS timestamp<br>
+ * use &quot;yyyy-MM-dd'T'HH:mm:ss.SSS'Z'&quot;
+ * </p>
+ * This class contains a main() that sets up the rest of the system. Then sleeps.
+ * </p>
+ * A GPSdEndpoint is created and provided an ObjectListener and a ResultParser
+ * </p>
+ * The GPX output file is created and the header information is written.
+ * The file name is fixed.
+ * </p>
+ * The GPSdEndpoint launches a thread to listen for messages and dispatch them through
+ * the ObjectListener and ResultParser.
+ *
+ * \todo The GPX output file name should use a date stamp.
+ *
+ * \todo if the Shared folder doesn't already exist, create it
  */
+
 public class GPSTrackPointsRun {
+	/// dateFormat to convert GPS timestamp to a desirable format
 	protected final DateFormat dateFormat; // Don't make this static!
 	
 	private GPSTrackPointsRun() {
 		dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
 	}
 
 	/**
-	 * @param args
-	 *            the args
+	 * @param args Command line arguments<br>
+	 * &lt;hostname> &lt;port #><br>
+	 * default is localhost and port 2947
 	 */
 	public static void main(final String[] args) {
 		try {

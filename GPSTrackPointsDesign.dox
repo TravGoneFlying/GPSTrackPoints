@@ -1,0 +1,59 @@
+/** \mainpage GPS Track Points Design
+<h1>Overview</h1>
+This is a Java application that runs on a Raspberry Pi to interpret GPS positions. When
+a button is pushed, the curent position is logged to a file using the GPX format.
+</p>
+When the button is pushed and held for more than 3 seconds, the system is shut down.
+</p>
+The source is available in GitHub at https://github.com/com.traviscons.GPSTrackPoints.git
+</p>
+This source depends on the standard Java libraries and JSON from json.org
+<h1>Hardware</h1>
+This Java software is designed to run on a Raspberry Pi. It was developed on a
+Raspberry Pi 3 with built in WiFi. Features of the Raspberry Pi that are used for
+this application:
+<ul><li>GPIO - one pin is used for the switch input. At the moment, GPIO #23 (pin 16)
+is used
+with the internal pull up resistor enabled. The switch is normally open and pulls
+the GPIO pin to ground. Ground is available on pin 14 right next to GPIO #23.</li>
+\todo Make the GPIO pin configurable
+
+<li>A USB-based GPS receiver is used. It is combined package with the receiver packaged
+with the antennae and with a USB interface</li>
+<li>The WiFi is used to access the Raspberry Pi to retrieve the logged data</li>
+<li>LED0 (the green one) is used to indicate logging of GPS data when the button is</li>
+<li>LED1 is the red power LED and that has not been modified</li>
+<li>Heat sinks have been installed. As the unit does not need to sit in the sun as the
+GPS antennae has a reasonably long cable. The Raspberry Pi box can be anywhere within
+reach to push the button. A fan should not be necessary. A log file is kept so
+that the CPU temperature can be determined after each logging session</li>
+</ul>
+
+<h1>Software</h1>
+<h2>Overview</h2>
+The software makes use of the GPSd, a GPS interpreter daemon. GPSd is designed to
+adapt to a range of GPS devices and provides a defined interface to the system.
+</p>
+The software is designed in several threads.
+<ul><li>The main thread (\ref GPSTrackPointsRun) interprets command line options, and sets
+up the other threads. The main thread writes the header information to the output file.
+At the moment, the main thread sleeps for 1 minute, then stops the other threads,
+and finally writes the footer information to the output file.</li>
+<li>A listener thread (\ref ObjectListener using the \ref IObjectListner interface) interprets
+the GPS messages and passes them on to a parser (\ref ResultParser). The parser does the
+bulk of the work.</li>
+<li>A button thread waits for button pushes and generates either a signal to the
+listener thread to log a position or it generates a signal to the main thread to
+shut the system down.</li>
+<li>An LED thread waits for a signal from the Listener thread. When it receives this
+signal, it turns LED0 on for 1 second then off. If the LED thread receives a shutdown
+signal from the main thread, it turns LED0 on for 3 seconds then off and the thread
+terminates. The main thread will wait for the thread to terminate before issuing the
+system call to shutdown.</li>
+</ul>
+</p>
+\author Travis Marlatte
+\date August 2018
+\version Version 1.0 of the design
+\copyright &copy; Copyright 2018 Travis Marlatte
+*/
