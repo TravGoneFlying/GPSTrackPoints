@@ -75,6 +75,8 @@ public class GPSTrackPointsRun {
 	 * default is localhost and port 2947
 	 */
 	public static void main(final String[] args) {
+		WatchButton wp = new WatchButton(23); // watch for button action on GPIO23
+
 		try {
 			String host = "localhost";
 			int port = 2947;
@@ -168,8 +170,35 @@ public class GPSTrackPointsRun {
 
 //			System.err.println("INFO: Tester - Poll: " + ep.poll());
 
-			/* Infinite loop while the listeners do the work */
-			Thread.sleep(60000);
+			class ButtonCallback implements iButtonCallback {
+				public void ShortPush() {
+					System.err.println("Got a short push");
+				}
+	
+				public void LongPush() {
+					System.err.println("Got long push");
+				}
+			}
+
+			ButtonCallback myButtonCallback = new ButtonCallback();
+		
+			wp.initButton();
+
+			wp.setButtonCallback(myButtonCallback);
+		
+			// start the watch thread
+			Thread watchThread = new Thread(wp);
+			watchThread.start();
+	
+			System.err.println("Watch button started");
+	
+			// The push button thread will kill itself after a long push
+			try {
+				watchThread.join();
+				// shutdown
+			} catch (Exception e) {
+				System.err.println("Caught exception while sleeping " + e.toString());
+			}
 
 			ep.stop();
 		
