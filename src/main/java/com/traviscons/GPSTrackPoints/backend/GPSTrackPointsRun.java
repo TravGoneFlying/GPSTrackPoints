@@ -1,11 +1,11 @@
 package com.traviscons.GPSTrackPoints.backend;
 
-/*
- * #%L
- * GPSd4Java
- * %%
+/* GPSTrackpointsRun
+ * Copyright 2018 Travis Marlatte
+ *
+ * Derived from GPSd4Java
  * Copyright (C) 2011 - 2012 Taimos GmbH
- * %%
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,7 @@ package com.traviscons.GPSTrackPoints.backend;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * #L%
+ *
  */
 
 import java.text.DateFormat;
@@ -41,21 +41,42 @@ import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
 
 /**
  * Initialize and execute a listener for GPSd.
- * lat, long and altitude are displayed to the console.
  *
+ * Use DateFormat to establish the desired presentation of the GPS timestamp<br>
+ * use &quot;yyyy-MM-dd'T'HH:mm:ss.SSS'Z'&quot;
+ * </p>
+ * This class contains a main() that sets up the rest of the system. Then sleeps.
+ * </p>
+ * A GPSdEndpoint is created and provided an ObjectListener and a ResultParser
+ * </p>
+ * The GPX output file is created and the header information is written.
+ * The file name is fixed.
+ * </p>
+ * The GPSdEndpoint launches a thread to listen for messages and dispatch them through
+ * the ObjectListener and ResultParser.
+ *
+ * \todo The GPX output file name should use a date stamp.
+ *
+ * \todo if the Shared folder doesn't already exist, create it
+ *
+ * \author Travis Marlatte
+ * \copyright &copy; Copyright 2018 Travis Marlatte
+ * @author original author of GPSd4Java: thoeger
  */
+
 public class GPSTrackPointsRun {
+	/// dateFormat to convert GPS timestamp to a desirable format
 	protected final DateFormat dateFormat; // Don't make this static!
-	
+
 	private GPSTrackPointsRun() {
 		dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
 	}
 
 	/**
-	 * @param args
-	 *            the args
+	 * @param args Command line arguments<br>
+	 * &lt;hostname> &lt;port #><br>
+	 * default is localhost and port 2947
 	 */
 	public static void main(final String[] args) {
 		try {
@@ -88,22 +109,33 @@ public class GPSTrackPointsRun {
 			String GPXFilename = "Shared/newTrackPoints.gpx";
 
 			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
-			
+
 			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 			GPXHeaderFooter.write("<gpx version=\"1.0\" creator=\"com.traviscons.GPSTrackPoints\">\n");
 			GPXHeaderFooter.write("<name>GPSTRackPoints date</name>\n");
 			GPXHeaderFooter.close();
-			
+
 			ep.addListener(new ObjectListener(GPXFilename) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
 					FileWriter GPXOutput = null;
-					
-					if (tpv.getAltitude() != Double.NaN) {
+
+					if (!Double.isNaN(tpv.getAltitude())) {
 						try {
 							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
-							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time></wpt>\n");
+							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time>");
+							switch (tpv.getMode()) {
+								case ThreeDimensional:
+									GPXOutput.write("<fix>3d</fix>");
+									break;
+								case TwoDimensional:
+									GPXOutput.write("<fix>2d</fix>");
+									break;
+								default:
+									// Do nothing
+							}
+							GPXOutput.write("</wpt>\n");
 							GPXOutput.close();
 						} catch (IOException e) {
 							System.err.println("Caught Exception writing to the GPX output " + e.toString());
@@ -155,12 +187,12 @@ public class GPSTrackPointsRun {
 			Thread.sleep(60000);
 
 			ep.stop();
-		
+
 			GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
 			GPXHeaderFooter.write("</gpx>\n");
 			GPXHeaderFooter.close();
 
-	
+
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);
 		}
