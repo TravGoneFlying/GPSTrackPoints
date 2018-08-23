@@ -125,7 +125,9 @@ public class GPSTrackPointsRun {
 					FileWriter GPXOutput = null;
 
 					if (!Double.isNaN(tpv.getAltitude())) {
-						fsLED.GPSFixLED1();
+						if (fsLED != null) {
+							fsLED.GPSFixLED1();
+						}
 						try {
 							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
 							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time>");

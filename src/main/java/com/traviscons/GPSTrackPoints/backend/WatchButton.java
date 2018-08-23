@@ -4,7 +4,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
- 
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
@@ -35,55 +35,13 @@ import java.lang.Runtime;
 * seconds or when the button is held for more than 3 seconds.
 */
 
-class WatchButton implements Runnable {
+public class WatchButton implements Runnable {
 	int gpioNum; ///< Holds the gpio pin number. Note not the physical pin number.
+	String sysDir; ///< Holds the directory where the system manages gpio pins
 	String gpioName; ///< Holds the constucted name of the gpio pin. e.g. "gpio23"
 	String gpioPath; ///< Holds the constructed path of the gpio pin
 	String gpioValuePath; ///< Holds the constructed path of the gpio value file
 	iButtonCallback buttonCallback; ///< object to provide the callback mechanism
-
-	/** Implement a main to test a thread that waits for the button
-	* \param none
-	*
-	* <h1>Design</h1>
-	* Set up a watch event for button 23. Initialize the button (direction in,
-	* edge both, pull up resistor.
-	* </p>
-	* Then start the watch thread and sleep for a minute.
-	*/
-	public static void main(String args[]) {
-		System.err.println("Running just to test for button transitions");
-		System.err.println("Defaults to GPIO23 (pin 16) with a pull up");
-		WatchButton wp = new WatchButton(23);
-		class ButtonCallback implements iButtonCallback {
-			public void ShortPush() {
-				System.err.println("Got a short push");
-			}
-
-			public void LongPush() {
-				System.err.println("Got long push");
-			}
-		}
-
-		ButtonCallback myButtonCallback = new ButtonCallback();
-		
-		wp.initButton();
-
-		wp.setButtonCallback(myButtonCallback);
-		
-		// start the watch thread
-		Thread watchThread = new Thread(wp);
-		watchThread.start();
-
-		System.err.println("Came back from start()");
-
-		// sleep for a minute
-		try {
-			watchThread.join();
-		} catch (Exception e) {
-			System.err.println("Caught exception while sleeping " + e.toString());
-		}
-	}
 
 	/** Constructor that sets the bpio number to use for the button
 	* \param inGpioNum the gpio number (not the pin number)
@@ -91,12 +49,18 @@ class WatchButton implements Runnable {
 	*
 	* \todo Implement error checking on the gpio number
 	*/
-	WatchButton(int inGpioNum) {
-		gpioNum = inGpioNum;
-		gpioName = "gpio" + gpioNum;
-		gpioPath = "/sys/class/gpio/gpio" + gpioNum;
-		gpioValuePath = "/sys/class/gpio/gpio" + gpioNum + "/value";
+	public WatchButton(int gpioNum) {
+		this(gpioNum, "/sys/class/gpio");
+	}
 
+	/** A second form of the constructor that will allow us to junit test
+	*/
+	public WatchButton(int gpioNum, String sysDir) {
+		this.sysDir = sysDir;
+		this.gpioNum = gpioNum;
+		gpioName = "gpio" + gpioNum;
+		gpioPath = sysDir + "/gpio" + gpioNum;
+		gpioValuePath = sysDir + "/gpio" + gpioNum + "/value";
 	}
 
 	/** Initialize the gpio pin for input, edge detection both, pull up resistor.
@@ -108,11 +72,11 @@ class WatchButton implements Runnable {
 		FileWriter sysFile;
 
 		try {
-			sysFile = new FileWriter("/sys/class/gpio/export");
+			sysFile = new FileWriter(sysDir + "/export");
 			sysFile.write(Integer.toString(gpioNum));
 			sysFile.close();
 			Thread.sleep(100); // sleep after exporting
-	
+
 		} catch (Exception e) {
 			System.err.println("Caught an exception exporting the button " + e.toString());
 		}
@@ -121,7 +85,7 @@ class WatchButton implements Runnable {
 			sysFile = new FileWriter(gpioPath + "/direction");
 			sysFile.write("in");
 			sysFile.close();
-			
+
 		} catch (Exception e) {
 			System.err.println("Caught an exception setting the direction for the button " + e.toString());
 		}
@@ -135,7 +99,7 @@ class WatchButton implements Runnable {
 		}
 
 		try {
-	
+
 			Runtime rt = Runtime.getRuntime();
 			rt.exec("raspi-gpio set " + gpioNum + " pu");
 		} catch (Exception e) {
@@ -147,7 +111,7 @@ class WatchButton implements Runnable {
 		FileWriter sysFile;
 
 		try {
-			sysFile = new FileWriter("/sys/class/gpio/unexport");
+			sysFile = new FileWriter(sysDir + "/unexport");
 			sysFile.write(Integer.toString(gpioNum));
 			sysFile.close();
 		} catch (Exception e) {
@@ -170,7 +134,7 @@ class WatchButton implements Runnable {
 	*
 	* We'll take the watch signal that it has been pushed.
 	* \todo Study to make sure watch debounces reliably
-	* 
+	*
 	* Once the button has been pushed, we use a loop with 100ms sleeps to watch
 	* the button. If it is released &lt;3 seconds - signal a GPS position log. If
 	* it remains pressed for 3 seconds or greater, signal a shutdown. Note we do not
@@ -185,16 +149,16 @@ class WatchButton implements Runnable {
 		*/
 		int buttonState = 0; // 0 is inactive
 		boolean runningState = true;
-		
+
 		try {
 			// Set up the watch service. This is part of java.nio
 			WatchService watcher = FileSystems.getDefault().newWatchService();
-			
+
 			// We watch the gpio directory. WatchService cannot watch specific files
 			// We'll watch for anything but we really want a modification of the value file
 			Path dir = Paths.get(gpioPath);
 			dir.register(watcher, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-			
+
 			while (runningState) {
 				WatchKey key;
 				try {
@@ -221,7 +185,7 @@ class WatchButton implements Runnable {
 					break;
 				}
 
-				// If the key is null, then it was the timeout. 
+				// If the key is null, then it was the timeout.
 				if (key == null) {
 					/* We now know that it was a long push. */
 					if (buttonCallback != null) {
@@ -237,25 +201,25 @@ class WatchButton implements Runnable {
 				for (WatchEvent<?> event : key.pollEvents()) {
 					// get event type
 					WatchEvent.Kind<?> kind = event.kind();
-			 
+
 					// get file name
 					@SuppressWarnings("unchecked")
 					WatchEvent<Path> ev = (WatchEvent<Path>) event;
 					Path fileName = ev.context();
-			 
+
 					if (kind == OVERFLOW) {
 						System.err.println("Overflow");
 						continue;
 					} else if (kind == ENTRY_CREATE) {
-			 
+
 						// process create event
 						System.err.println("Create " + fileName);
-			 
+
 					} else if (kind == ENTRY_DELETE) {
-			 
+
 						// process delete event
 						System.err.println("Delete " + fileName);
-			 
+
 					} else if (kind == ENTRY_MODIFY) {
 						// process modify event
 						int value;
@@ -269,7 +233,7 @@ class WatchButton implements Runnable {
 									/* This is a normal release without a timeout */
 									buttonCallback.ShortPush();
 								}
-								
+
 								/* whether it was a normal release or after a timeout,
 								/* we can go back to inactive
 								*/
@@ -277,14 +241,14 @@ class WatchButton implements Runnable {
 							} else if (value == 48) {
 								/* Button low. That's active */
 								buttonState = 1;
-							
+
 							}
 							vFile.close();
 						}
 
 					}
 				}
-			 
+
 				// IMPORTANT: The key must be reset after processed
 				boolean valid = key.reset();
 				if (!valid) {
