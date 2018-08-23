@@ -80,6 +80,7 @@ public class GPSTrackPointsRun {
 	 */
 	public static void main(final String[] args) {
 		WatchButton wp = new WatchButton(23); // watch for button action on GPIO23
+		FixStatus fsLED = new FixStatus(); // take over LED1
 
 		try {
 			String host = "localhost";
@@ -117,13 +118,14 @@ public class GPSTrackPointsRun {
 			GPXHeaderFooter.write("<name>GPSTRackPoints date</name>\n");
 			GPXHeaderFooter.close();
 
-			ep.addListener(new ObjectListener(GPXFilename) {
+			ep.addListener(new ObjectListener(GPXFilename, fsLED) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
 					FileWriter GPXOutput = null;
 
 					if (!Double.isNaN(tpv.getAltitude())) {
+						fsLED.GPSFixLED1();
 						try {
 							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
 							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time>");
@@ -179,34 +181,28 @@ public class GPSTrackPointsRun {
 			ep.start();
 			ep.watch(true, true);
 
-//			System.err.println("INFO: Tester - Version: " + ep.version());
-
-//			System.err.println("INFO: Tester - Watch: " + ep.watch(true, true));
-
-//			System.err.println("INFO: Tester - Poll: " + ep.poll());
-
 			class ButtonCallback implements iButtonCallback {
 				public void ShortPush() {
 					System.err.println("Got a short push");
 				}
-	
+
 				public void LongPush() {
 					System.err.println("Got long push");
 				}
 			}
 
 			ButtonCallback myButtonCallback = new ButtonCallback();
-		
+
 			wp.initButton();
 
 			wp.setButtonCallback(myButtonCallback);
-		
+
 			// start the watch thread
 			Thread watchThread = new Thread(wp);
 			watchThread.start();
-	
+
 			System.err.println("Watch button started");
-	
+
 			// The push button thread will kill itself after a long push
 			try {
 				watchThread.join();
@@ -216,11 +212,13 @@ public class GPSTrackPointsRun {
 			}
 
 			ep.stop();
+			fsLED.stopLED1();
 
 			GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
 			GPXHeaderFooter.write("</gpx>\n");
 			GPXHeaderFooter.close();
 
+			// shutdown
 
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);
