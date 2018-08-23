@@ -107,12 +107,10 @@ public class FixStatus implements Runnable {
 		initLED1();
 	}
 
-	/** Initialize the gpio pin for input, edge detection both, pull up resistor.
-	* The button will be normally open. Close to ground the pin. pin 14 is ground
-	* right next to pin 16. It also means we don't have a power wire floating around.
+	/** Initialize the LED to an OFF state.
 	*/
 
-	public void initLED1() {
+	private void initLED1() {
 		FileWriter sysFile;
 
 		LED1State = FLASHSTATES.OFFNOFIX;
@@ -150,7 +148,7 @@ public class FixStatus implements Runnable {
 		}
 	}
 
-	public void stopLED1() {
+	synchronized public void stopLED1() {
 		FileWriter sysFile;
 
 		LED1State = FLASHSTATES.OFF;
@@ -160,7 +158,7 @@ public class FixStatus implements Runnable {
 
 	/** Called to flash the LED for a GPS Fix
 	*/
-	public void GPSFixLED1() {
+	synchronized public void GPSFixLED1() {
 		if (LED1State != FLASHSTATES.OFF) {
 			LED1State = FLASHSTATES.ONFIX;
 			LED1StateCount = 0;
