@@ -20,6 +20,7 @@ package com.traviscons.GPSTrackPoints.backend;
  *
  */
 
+import java.time.LocalDateTime;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -108,40 +109,22 @@ public class GPSTrackPointsRun {
 			ResultParser rp = new ResultParser();
 			ep = new GPSdEndpoint(host, port, rp);
 
-			String GPXFilename = "Shared/newTrackPoints.gpx";
+			String localDateTime = LocalDateTime.now().toString();
+			String GPXFilename = "Shared/TrackPoints" + localDateTime + ".gpx";
 
 			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
 
 			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 			GPXHeaderFooter.write("<gpx version=\"1.0\" creator=\"com.traviscons.GPSTrackPoints\">\n");
-			GPXHeaderFooter.write("<name>GPSTRackPoints date</name>\n");
+			GPXHeaderFooter.write("<name>GPSTRackPoints " + localDateTime + "</name>\n");
 			GPXHeaderFooter.close();
 
 			ep.addListener(new ObjectListener(GPXFilename) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
-					FileWriter GPXOutput = null;
-
 					if (!Double.isNaN(tpv.getAltitude())) {
-						try {
-							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
-							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time>");
-							switch (tpv.getMode()) {
-								case ThreeDimensional:
-									GPXOutput.write("<fix>3d</fix>");
-									break;
-								case TwoDimensional:
-									GPXOutput.write("<fix>2d</fix>");
-									break;
-								default:
-									// Do nothing
-							}
-							GPXOutput.write("</wpt>\n");
-							GPXOutput.close();
-						} catch (IOException e) {
-							System.err.println("Caught Exception writing to the GPX output " + e.toString());
-						}
+						ep.myGPSPosition.setPosition(tpv);
 					}
 				}
 
@@ -179,23 +162,41 @@ public class GPSTrackPointsRun {
 			ep.start();
 			ep.watch(true, true);
 
-//			System.err.println("INFO: Tester - Version: " + ep.version());
-
-//			System.err.println("INFO: Tester - Watch: " + ep.watch(true, true));
-
-//			System.err.println("INFO: Tester - Poll: " + ep.poll());
-
 			class ButtonCallback implements iButtonCallback {
+				String GPXFilename;
+				ButtonCallback(String GPXFilename) {
+					this.GPXFilename = GPXFilename;
+				}
+
 				public void ShortPush() {
-					System.err.println("Got a short push");
+					TPVObject lastTPV = ep.myGPSPosition.getPosition();
+					FileWriter GPXOutput = null;
+					try {
+						GPXOutput = new FileWriter(GPXFilename, true); // Open with append
+						GPXOutput.write("<wpt lat=\"" + lastTPV.getLatitude() + "\" lon=\"" + lastTPV.getLongitude() + "\"><ele>" + lastTPV.getAltitude() + "</ele><time>" + lastTPV.getTimestampText() + "</time>");
+						switch (lastTPV.getMode()) {
+							case ThreeDimensional:
+								GPXOutput.write("<fix>3d</fix>");
+								break;
+							case TwoDimensional:
+								GPXOutput.write("<fix>2d</fix>");
+								break;
+							default:
+								// Do nothing
+						}
+						GPXOutput.write("</wpt>\n");
+						GPXOutput.close(); // Closing also flushes
+					} catch (IOException e) {
+						System.err.println("Caught Exception writing to the GPX output " + e.toString());
+					}
+
 				}
 	
 				public void LongPush() {
-					System.err.println("Got long push");
 				}
 			}
 
-			ButtonCallback myButtonCallback = new ButtonCallback();
+			ButtonCallback myButtonCallback = new ButtonCallback(GPXFilename);
 		
 			wp.initButton();
 

@@ -82,6 +82,9 @@ public class GPSdEndpoint {
 
 	private AtomicLong retryInterval = new AtomicLong(1000);
 
+	GPSPosition myGPSPosition = new GPSPosition();
+
+
 	/**
 	 * The caller must supply the server name and a port
 	 *
