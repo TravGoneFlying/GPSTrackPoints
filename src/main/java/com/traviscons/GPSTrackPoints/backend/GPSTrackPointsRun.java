@@ -81,6 +81,7 @@ public class GPSTrackPointsRun {
 	 */
 	public static void main(final String[] args) {
 		WatchButton wp = new WatchButton(23); // watch for button action on GPIO23
+		FixStatus fsLED = new FixStatus(); // take over LED1
 
 		try {
 			String host = "localhost";
@@ -119,12 +120,35 @@ public class GPSTrackPointsRun {
 			GPXHeaderFooter.write("<name>GPSTRackPoints " + localDateTime + "</name>\n");
 			GPXHeaderFooter.close();
 
-			ep.addListener(new ObjectListener(GPXFilename) {
+			ep.addListener(new ObjectListener(GPXFilename, fsLED) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
 					if (!Double.isNaN(tpv.getAltitude())) {
+
 						ep.myGPSPosition.setPosition(tpv);
+
+						if (fsLED != null) {
+							fsLED.GPSFixLED1();
+						}
+						try {
+							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
+							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time>");
+							switch (tpv.getMode()) {
+								case ThreeDimensional:
+									GPXOutput.write("<fix>3d</fix>");
+									break;
+								case TwoDimensional:
+									GPXOutput.write("<fix>2d</fix>");
+									break;
+								default:
+									// Do nothing
+							}
+							GPXOutput.write("</wpt>\n");
+							GPXOutput.close();
+						} catch (IOException e) {
+							System.err.println("Caught Exception writing to the GPX output " + e.toString());
+						}
 					}
 				}
 
@@ -217,11 +241,13 @@ public class GPSTrackPointsRun {
 			}
 
 			ep.stop();
+			fsLED.stopLED1();
 
 			GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
 			GPXHeaderFooter.write("</gpx>\n");
 			GPXHeaderFooter.close();
 
+			// shutdown
 
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);

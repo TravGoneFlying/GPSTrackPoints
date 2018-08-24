@@ -56,8 +56,8 @@ public class GPSTrackPointsTest {
 			final GPSdEndpoint ep = new GPSdEndpoint(host, port, new ResultParser());
 
 			String inGPXFilename = "Shared/testGPXOutput.gpx";
-			
-			ep.addListener(new ObjectListener(inGPXFilename) {
+
+			ep.addListener(new ObjectListener(inGPXFilename, null) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
@@ -111,7 +111,7 @@ public class GPSTrackPointsTest {
 //			System.err.println("INFO: Tester - Poll: " + ep.poll());
 
 			Thread.sleep(60000);
-			
+
 		} catch (final Exception e) {
 			System.err.println("ERROR: Tester - Problem encountered" + e);
 		}
