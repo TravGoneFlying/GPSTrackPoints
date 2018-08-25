@@ -4,7 +4,7 @@ import com.traviscons.GPSTrackPoints.types.TPVObject;
 
 /** Hold a GPS position and protect access to it for thread safety.
 */
-class GPSPosition {
+public class GPSPosition {
 	private TPVObject tpv;
 
 	synchronized public void setPosition(TPVObject newTPV) {

@@ -31,6 +31,7 @@ import com.traviscons.GPSTrackPoints.types.TPVObject;
 import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
 
 import com.traviscons.GPSTrackPoints.backend.FixStatus;
+import com.traviscons.GPSTrackPoints.backend.GPSPosition;
 
 /**
  * Adapter class for {@link IObjectListener}
@@ -40,10 +41,12 @@ import com.traviscons.GPSTrackPoints.backend.FixStatus;
 public class ObjectListener implements IObjectListener {
 	public String GPXFilename;
 	public FixStatus fsLED;
+	public GPSPosition myGPSPosition;
 
-	public ObjectListener(String inGPXFilename, FixStatus infsLED) {
-		GPXFilename = inGPXFilename;
-		fsLED = infsLED;
+	public ObjectListener(String GPXFilename, FixStatus fsLED, GPSPosition myGPSPosition) {
+		this.GPXFilename = GPXFilename;
+		this.fsLED = fsLED;
+		this.myGPSPosition = myGPSPosition;
 	}
 
 	@Override

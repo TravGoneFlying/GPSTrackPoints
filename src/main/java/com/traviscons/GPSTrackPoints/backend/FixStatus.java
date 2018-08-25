@@ -202,8 +202,8 @@ public class FixStatus implements Runnable {
 				case ONFIX:
 					LED1StateCount++;
 
-					if (LED1StateCount >= 5) {
-						// We reached 0.5 seconds, turn the LED off
+					if (LED1StateCount >= 2) {
+						// We reached 0.1 seconds, turn the LED off
 						LED1State = FLASHSTATES.OFFNOFIX;
 						LED1StateCount = 0;
 						LED1TurnOff();
@@ -213,6 +213,10 @@ public class FixStatus implements Runnable {
 				case OFF:
 					runningState = false;
 					break;
+
+				default:
+					runningState = false;
+					break;
 			}
 
 			if (runningState) {
@@ -220,7 +224,7 @@ public class FixStatus implements Runnable {
 					Thread.sleep(100); // Sleep for 100ms at a time
 				} catch (InterruptedException ex) {
 					// Something woke us up but not a watch event
-					System.err.println("poll was interrupted");
+					System.err.println("ERROR: GPS Fix LED was interrupted");
 				}
 			}
 		}

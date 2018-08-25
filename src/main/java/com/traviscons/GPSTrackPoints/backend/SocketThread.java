@@ -103,21 +103,21 @@ public class SocketThread extends Thread {
 	/// initialization as well as recovery.
 	protected void retry() {
 		if (this.reader != null) {
-			System.err.println("DEBUG: SocketThread - Disconnected from GPS socket, retrying connection");
+			// System.err.println("DEBUG: SocketThread - Disconnected from GPS socket, retrying connection");
 		} else {
-			System.err.println("DEBUG: SocketThread - Connecting to GPSD socket");
+			// System.err.println("DEBUG: SocketThread - Connecting to GPSD socket");
 		}
 
 		while (this.running.get()) {
 			try {
 				this.running.waitFor(this.endpoint.getRetryInterval());
 				this.endpoint.handleDisconnected();
-				System.err.println("DEBUG: SocketThread - Connected to GPS socket");
+				// System.err.println("DEBUG: SocketThread - Connected to GPS socket");
 				this.running.set(false);
 			} catch (InterruptedException ix) {
 				break;
 			} catch (IOException e) {
-				System.err.println("DEBUG: SocketThread - Still disconnected from GPS socket, retrying connection again");
+				// System.err.println("DEBUG: SocketThread - Still disconnected from GPS socket, retrying connection again");
 			}
 		}
 	}

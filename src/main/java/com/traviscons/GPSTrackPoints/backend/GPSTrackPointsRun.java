@@ -25,13 +25,12 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.lang.Runtime;
 
 import java.io.FileWriter;
 import java.io.IOException;
 
 import com.traviscons.GPSTrackPoints.api.ObjectListener;
-import com.traviscons.GPSTrackPoints.backend.GPSdEndpoint;
-import com.traviscons.GPSTrackPoints.backend.ResultParser;
 import com.traviscons.GPSTrackPoints.types.ATTObject;
 import com.traviscons.GPSTrackPoints.types.DeviceObject;
 import com.traviscons.GPSTrackPoints.types.DevicesObject;
@@ -82,72 +81,80 @@ public class GPSTrackPointsRun {
 	public static void main(final String[] args) {
 		WatchButton wp = new WatchButton(23); // watch for button action on GPIO23
 		FixStatus fsLED = new FixStatus(); // take over LED1
+		int wptIndex = 0;
+		GPSPosition myGPSPosition = new GPSPosition();
+
+
+
+		// start the LED thread
+		Thread fsLEDThread = new Thread(fsLED);
+		fsLEDThread.start();
+
+		LogStatus lsLED = new LogStatus(); // sets up the LED to its default state and shuts the LED off
+
+		// start the LED thread
+		Thread lsLEDThread = new Thread(lsLED);
+		lsLEDThread.start();
+
+		String host = "localhost";
+		int port = 2947;
+
+		switch (args.length) {
+		case 0:
+			// Nothing to do, use default
+			break;
+		case 1:
+			// only server specified
+			host = args[0];
+			break;
+		case 2:
+			// Server and port specified
+			host = args[0];
+			if (args[1].matches("\\d+")) {
+				port = Integer.parseInt(args[1]);
+			}
+			break;
+		default:
+			break;
+		}
+
+		GPSdEndpoint ep = null;
+		ResultParser rp = new ResultParser();
 
 		try {
-			String host = "localhost";
-			int port = 2947;
-
-			switch (args.length) {
-			case 0:
-				// Nothing to do, use default
-				break;
-			case 1:
-				// only server specified
-				host = args[0];
-				break;
-			case 2:
-				// Server and port specified
-				host = args[0];
-				if (args[1].matches("\\d+")) {
-					port = Integer.parseInt(args[1]);
-				}
-				break;
-			default:
-				break;
-			}
-
-			final GPSdEndpoint ep;
-			ResultParser rp = new ResultParser();
 			ep = new GPSdEndpoint(host, port, rp);
+		} catch (Exception e) {
+			System.err.println("Caught an exception setting socket port " + e.toString());
+		}
 
-			String localDateTime = LocalDateTime.now().toString();
-			String GPXFilename = "Shared/TrackPoints" + localDateTime + ".gpx";
+		String localDateTime = LocalDateTime.now().toString();
+		String GPXFilename = "Shared/TrackPoints" + localDateTime + ".gpx";
 
+		try {
 			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
-
-			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-			GPXHeaderFooter.write("<gpx version=\"1.0\" creator=\"com.traviscons.GPSTrackPoints\">\n");
-			GPXHeaderFooter.write("<name>GPSTRackPoints " + localDateTime + "</name>\n");
+			GPXHeaderFooter.write("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
+			GPXHeaderFooter.write("<gpx version=\"1.1\" creator=\"com.traviscons.GPSTrackPoints\"\n");
+			GPXHeaderFooter.write("xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
+			GPXHeaderFooter.write("<metadata><name>GPSTRackPoints " + localDateTime + "</name></metadata>\n");
 			GPXHeaderFooter.close();
 
-			ep.addListener(new ObjectListener(GPXFilename, fsLED) {
+		} catch (IOException e) {
+			System.err.println("Caught an exception writing GPX header " + e.toString());
+		}
+
+		try {
+			ep.addListener(new ObjectListener(GPXFilename, fsLED, myGPSPosition) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
+					FileWriter GPXOutput;
+
 					if (!Double.isNaN(tpv.getAltitude())) {
 
-						ep.myGPSPosition.setPosition(tpv);
+						myGPSPosition.setPosition(tpv);
 
 						if (fsLED != null) {
 							fsLED.GPSFixLED1();
-						}
-						try {
-							GPXOutput = new FileWriter(GPXFilename, true); // Open with append
-							GPXOutput.write("<wpt lat=\"" + tpv.getLatitude() + "\" lon=\"" + tpv.getLongitude() + "\"><ele>" + tpv.getAltitude() + "</ele><time>" + tpv.getTimestampText() + "</time>");
-							switch (tpv.getMode()) {
-								case ThreeDimensional:
-									GPXOutput.write("<fix>3d</fix>");
-									break;
-								case TwoDimensional:
-									GPXOutput.write("<fix>2d</fix>");
-									break;
-								default:
-									// Do nothing
-							}
-							GPXOutput.write("</wpt>\n");
-							GPXOutput.close();
-						} catch (IOException e) {
-							System.err.println("Caught Exception writing to the GPX output " + e.toString());
 						}
 					}
 				}
@@ -186,41 +193,7 @@ public class GPSTrackPointsRun {
 			ep.start();
 			ep.watch(true, true);
 
-			class ButtonCallback implements iButtonCallback {
-				String GPXFilename;
-				ButtonCallback(String GPXFilename) {
-					this.GPXFilename = GPXFilename;
-				}
-
-				public void ShortPush() {
-					TPVObject lastTPV = ep.myGPSPosition.getPosition();
-					FileWriter GPXOutput = null;
-					try {
-						GPXOutput = new FileWriter(GPXFilename, true); // Open with append
-						GPXOutput.write("<wpt lat=\"" + lastTPV.getLatitude() + "\" lon=\"" + lastTPV.getLongitude() + "\"><ele>" + lastTPV.getAltitude() + "</ele><time>" + lastTPV.getTimestampText() + "</time>");
-						switch (lastTPV.getMode()) {
-							case ThreeDimensional:
-								GPXOutput.write("<fix>3d</fix>");
-								break;
-							case TwoDimensional:
-								GPXOutput.write("<fix>2d</fix>");
-								break;
-							default:
-								// Do nothing
-						}
-						GPXOutput.write("</wpt>\n");
-						GPXOutput.close(); // Closing also flushes
-					} catch (IOException e) {
-						System.err.println("Caught Exception writing to the GPX output " + e.toString());
-					}
-
-				}
-	
-				public void LongPush() {
-				}
-			}
-
-			ButtonCallback myButtonCallback = new ButtonCallback(GPXFilename);
+			ButtonCallback myButtonCallback = new ButtonCallback(GPXFilename, lsLED, wptIndex, myGPSPosition);
 		
 			wp.initButton();
 
@@ -230,27 +203,36 @@ public class GPSTrackPointsRun {
 			Thread watchThread = new Thread(wp);
 			watchThread.start();
 	
-			System.err.println("Watch button started");
-	
 			// The push button thread will kill itself after a long push
 			try {
 				watchThread.join();
-				// shutdown
 			} catch (Exception e) {
 				System.err.println("Caught exception while sleeping " + e.toString());
 			}
 
 			ep.stop();
+
 			fsLED.stopLED1();
-
-			GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
-			GPXHeaderFooter.write("</gpx>\n");
-			GPXHeaderFooter.close();
-
-			// shutdown
+			lsLEDThread.stop();
 
 		} catch (final Exception e) {
-			System.err.println("ERROR: Tester - Problem encountered" + e);
+			System.err.println("ERROR: GPSTrackPoints - Problem encountered" + e);
+		}
+
+		try {
+			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
+			GPXHeaderFooter.write("</gpx>\n");
+			GPXHeaderFooter.close();
+		} catch (IOException e) {
+			System.err.println("Caught exception writing GPX footer " + e.toString());
+		}
+
+		// shutdown
+		Runtime rt = Runtime.getRuntime();
+		try {
+			rt.exec("shutdown now");
+		} catch (IOException e) {
+			System.err.println("Caught exception trying to shutdown " + e.toString());
 		}
 	}
 }

@@ -38,7 +38,7 @@ public abstract class DistanceListener extends ObjectListener {
 	 * @param threshold the threshold to fire in kilometers
 	 */
 	public DistanceListener(final double threshold) {
-		super(null, null);
+		super(null, null, null);
 		this.threshold = threshold;
 	}
 
