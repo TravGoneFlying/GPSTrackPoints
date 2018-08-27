@@ -132,7 +132,7 @@ public class GPSTrackPointsRun {
 
 		try {
 			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
-			GPXHeaderFooter.write("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n");
+			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 			GPXHeaderFooter.write("<gpx version=\"1.1\" creator=\"com.traviscons.GPSTrackPoints\"\n");
 			GPXHeaderFooter.write("xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
 			GPXHeaderFooter.write("<metadata><name>GPSTRackPoints " + localDateTime + "</name></metadata>\n");
@@ -194,15 +194,15 @@ public class GPSTrackPointsRun {
 			ep.watch(true, true);
 
 			ButtonCallback myButtonCallback = new ButtonCallback(GPXFilename, lsLED, wptIndex, myGPSPosition);
-		
+
 			wp.initButton();
 
 			wp.setButtonCallback(myButtonCallback);
-		
+
 			// start the watch thread
 			Thread watchThread = new Thread(wp);
 			watchThread.start();
-	
+
 			// The push button thread will kill itself after a long push
 			try {
 				watchThread.join();
