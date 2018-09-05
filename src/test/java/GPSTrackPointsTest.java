@@ -1,11 +1,12 @@
 package com.traviscons.GPSTrackPoints.tests;
 
 /*
- * #%L
- * GPSd4Java
- * %%
+ * GPSTrackPointsTest
+ *
+ * Copyright 2018 Travis Marlatte
+ * Derived from GPSd4Java originally copyrighted by
  * Copyright (C) 2011 - 2012 Taimos GmbH
- * %%
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +18,6 @@ package com.traviscons.GPSTrackPoints.tests;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * #L%
  */
 
 import org.junit.*;
@@ -39,10 +39,15 @@ import com.traviscons.GPSTrackPoints.types.TPVObject;
 import com.traviscons.GPSTrackPoints.types.subframes.SUBFRAMEObject;
 
 /**
- * This class provides tests during the startup phase of GPSd4Java<br>
- * It will later be replaced by JUnit Tests
+ * JUnit tests for GPSTrackPoints.
  *
- * created: 17.01.2011
+ * This sets up the endpoint just like a normal application would.
+ * This will try to connect to a GPSd and set up listeners.
+ * If there is no GPS reciever available, then it will display error messages
+ * waiting for a GPS device.
+ *
+ * If there is a GPS receiver, it will print messages for each GPS message received.
+ * The test will run for 1 minute and then exit.
  *
  */
 public class GPSTrackPointsTest {
@@ -57,7 +62,7 @@ public class GPSTrackPointsTest {
 
 			String inGPXFilename = "Shared/testGPXOutput.gpx";
 
-			ep.addListener(new ObjectListener(inGPXFilename, null) {
+			ep.addListener(new ObjectListener(inGPXFilename, null, null) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {

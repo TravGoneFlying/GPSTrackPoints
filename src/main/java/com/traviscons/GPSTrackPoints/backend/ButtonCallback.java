@@ -1,6 +1,6 @@
 package com.traviscons.GPSTrackPoints.backend;
 
-import java.io.FileWriter;
+import java.io.RandomAccessFile;
 import java.io.IOException;
 
 import com.traviscons.GPSTrackPoints.types.TPVObject;
@@ -10,7 +10,7 @@ public class ButtonCallback implements iButtonCallback {
 	LogStatus lsLED;
 	int wptIndex;
 	GPSPosition myGPSPosition;
-	
+
 
 	ButtonCallback(String GPXFilename, LogStatus lsLED, int wptIndex, GPSPosition myGPSPosition) {
 		this.GPXFilename = GPXFilename;
@@ -21,24 +21,27 @@ public class ButtonCallback implements iButtonCallback {
 
 	public void ShortPush() {
 		TPVObject lastTPV = myGPSPosition.getPosition();
-		FileWriter GPXOutput;
+		RandomAccessFile GPXOutput;
 
 		try {
-			GPXOutput = new FileWriter(GPXFilename, true); // Open with append
-			GPXOutput.write("<wpt lat=\"" + lastTPV.getLatitude() + "\" lon=\"" + lastTPV.getLongitude() + "\">");
-			GPXOutput.write("<ele>" + lastTPV.getAltitude() + "</ele><time>" + lastTPV.getTimestampText() + "</time>");
-			GPXOutput.write("<name>"+wptIndex+"</name>");
+			GPXOutput = new RandomAccessFile(GPXFilename, "rw");
+			// Must position at the end
+			GPXOutput.seek(GPXOutput.length() - 6); // There is a </gpx> at the end that we want to overwrite
+			GPXOutput.writeChars("<wpt lat=\"" + lastTPV.getLatitude() + "\" lon=\"" + lastTPV.getLongitude() + "\">");
+			GPXOutput.writeChars("<ele>" + lastTPV.getAltitude() + "</ele><time>" + lastTPV.getTimestampText() + "</time>");
+			GPXOutput.writeChars("<name>"+wptIndex+"</name>");
 			switch (lastTPV.getMode()) {
 				case ThreeDimensional:
-					GPXOutput.write("<fix>3d</fix>");
+					GPXOutput.writeChars("<fix>3d</fix>");
 					break;
 				case TwoDimensional:
-					GPXOutput.write("<fix>2d</fix>");
+					GPXOutput.writeChars("<fix>2d</fix>");
 					break;
 				default:
 					// Do nothing
 			}
-			GPXOutput.write("</wpt>\n");
+			GPXOutput.writeChars("</wpt>\n");
+			GPXOutput.writeChars("</gpx>");
 			GPXOutput.close(); // Closing also flushes
 			lsLED.logLED();
 			wptIndex++;

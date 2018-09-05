@@ -27,7 +27,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.lang.Runtime;
 
-import java.io.FileWriter;
+import java.io.RandomAccessFile;
 import java.io.IOException;
 
 import com.traviscons.GPSTrackPoints.api.ObjectListener;
@@ -127,28 +127,14 @@ public class GPSTrackPointsRun {
 			System.err.println("Caught an exception setting socket port " + e.toString());
 		}
 
-		String localDateTime = LocalDateTime.now().toString();
-		String GPXFilename = "Shared/TrackPoints" + localDateTime + ".gpx";
-
-		try {
-			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, false); // Open no append
-			GPXHeaderFooter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-			GPXHeaderFooter.write("<gpx version=\"1.1\" creator=\"com.traviscons.GPSTrackPoints\"\n");
-			GPXHeaderFooter.write("xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
-			GPXHeaderFooter.write("<metadata><name>GPSTRackPoints " + localDateTime + "</name></metadata>\n");
-			GPXHeaderFooter.close();
-
-		} catch (IOException e) {
-			System.err.println("Caught an exception writing GPX header " + e.toString());
-		}
+		String GPXFilename = GPSTrackPointsRun.getNewGPXFilename();
+		GPSTrackPointsRun.writeGPXHeader(GPXFilename);
 
 		try {
 			ep.addListener(new ObjectListener(GPXFilename, fsLED, myGPSPosition) {
 
 				@Override
 				public void handleTPV(final TPVObject tpv) {
-					FileWriter GPXOutput;
-
 					if (!Double.isNaN(tpv.getAltitude())) {
 
 						myGPSPosition.setPosition(tpv);
@@ -219,14 +205,6 @@ public class GPSTrackPointsRun {
 			System.err.println("ERROR: GPSTrackPoints - Problem encountered" + e);
 		}
 
-		try {
-			FileWriter GPXHeaderFooter = new FileWriter(GPXFilename, true); // Open with append
-			GPXHeaderFooter.write("</gpx>\n");
-			GPXHeaderFooter.close();
-		} catch (IOException e) {
-			System.err.println("Caught exception writing GPX footer " + e.toString());
-		}
-
 		// shutdown
 		Runtime rt = Runtime.getRuntime();
 		try {
@@ -235,4 +213,32 @@ public class GPSTrackPointsRun {
 			System.err.println("Caught exception trying to shutdown " + e.toString());
 		}
 	}
+
+	private static String getNewGPXFilename() {
+		String localDateTime = LocalDateTime.now().toString();
+		String GPXFilename = "Shared/TrackPoints" + localDateTime + ".gpx";
+
+		return(GPXFilename);
+	}
+
+	private static void writeGPXHeader(String GPXFilename) {
+		if (GPXFilename == null || GPXFilename.matches(""))
+			return;
+
+		try {
+			RandomAccessFile GPXHeader = new RandomAccessFile(GPXFilename, "rw"); // Open no append
+			GPXHeader.writeChars("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+			GPXHeader.writeChars("<gpx version=\"1.1\" creator=\"com.traviscons.GPSTrackPoints\"\n");
+			GPXHeader.writeChars("xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
+			GPXHeader.writeChars("<metadata><name>GPSTRackPoints " + GPXFilename + "</name></metadata>\n");
+			GPXHeader.writeChars("</gpx>");
+			GPXHeader.close();
+
+		} catch (IOException e) {
+			System.err.println("Caught an exception writing GPX header " + e.toString());
+		}
+
+
+	}
 }
+
