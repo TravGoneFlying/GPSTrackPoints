@@ -227,18 +227,27 @@ public class GPSTrackPointsRun {
 
 		try {
 			RandomAccessFile GPXHeader = new RandomAccessFile(GPXFilename, "rw"); // Open no append
-			GPXHeader.writeChars("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-			GPXHeader.writeChars("<gpx version=\"1.1\" creator=\"com.traviscons.GPSTrackPoints\"\n");
-			GPXHeader.writeChars("xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
-			GPXHeader.writeChars("<metadata><name>GPSTRackPoints " + GPXFilename + "</name></metadata>\n");
-			GPXHeader.writeChars("</gpx>");
+			writeString(GPXHeader, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+			writeString(GPXHeader, "<gpx version=\"1.1\" creator=\"com.traviscons.GPSTrackPoints\"\n");
+			writeString(GPXHeader, "xmlns=\"http://www.topografix.com/GPX/1/1\">\n");
+			writeString(GPXHeader, "<metadata><name>GPSTRackPoints " + GPXFilename + "</name></metadata>\n");
+			writeString(GPXHeader, "</gpx>");
 			GPXHeader.close();
 
 		} catch (IOException e) {
 			System.err.println("Caught an exception writing GPX header " + e.toString());
 		}
-
-
 	}
+
+	private static void writeString(RandomAccessFile myFile, String outString) {
+		for (int i=0; i<outString.length(); i++) {
+			try {
+				myFile.writeByte(outString.charAt(i));
+			} catch (IOException e) {
+				System.err.println("Exception " + e.toString());
+			}
+		}
+	}
+
 }
 
